@@ -9,5 +9,11 @@
     "paths": {
       "@/*": ["./src/*"]
     }
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    // 添加需要忽略的文件夹路径
+    "src/api/**/*",  // 忽略 src/api 下的所有文件
+  ]
 }

@@ -1,55 +1,104 @@
-import Cookies from 'js-cookie'
-import { create } from 'zustand'
-
-const ACCESS_TOKEN = 'thisisjustarandomstring'
-
-interface AuthUser {
-  accountNo: string
-  email: string
-  role: string[]
-  exp: number
-}
+import {create} from "zustand/react";
+import {immer} from "zustand/middleware/immer";
+import {persist} from "zustand/middleware";
+import {devtools} from "zustand/middleware";
 
 interface AuthState {
-  auth: {
-    user: AuthUser | null
-    setUser: (user: AuthUser | null) => void
-    accessToken: string
-    setAccessToken: (accessToken: string) => void
-    resetAccessToken: () => void
-    reset: () => void
-  }
+  userId: string;
+  accessToken: string;
+  accessTokenExpiry: string;
+  refreshToken: string;
+  refreshTokenValidityMinutes: number;
+  login: (credentials: {
+    userId: string;
+    accessToken: string;
+    accessTokenExpiry: string;
+    refreshToken: string;
+    refreshTokenValidityMinutes: number;
+  }) => void;
+  logout: () => void;
+  isAuthenticated: () => boolean;
+  isRefreshTokenValid: () => boolean;
+  refreshTokens: (tokens: {
+    accessToken: string;
+    accessTokenExpiry: string;
+  }) => void;
 }
 
-export const useAuthStore = create<AuthState>()((set) => {
-  const cookieState = Cookies.get(ACCESS_TOKEN)
-  const initToken = cookieState ? JSON.parse(cookieState) : ''
-  return {
-    auth: {
-      user: null,
-      setUser: (user) =>
-        set((state) => ({ ...state, auth: { ...state.auth, user } })),
-      accessToken: initToken,
-      setAccessToken: (accessToken) =>
-        set((state) => {
-          Cookies.set(ACCESS_TOKEN, JSON.stringify(accessToken))
-          return { ...state, auth: { ...state.auth, accessToken } }
-        }),
-      resetAccessToken: () =>
-        set((state) => {
-          Cookies.remove(ACCESS_TOKEN)
-          return { ...state, auth: { ...state.auth, accessToken: '' } }
-        }),
-      reset: () =>
-        set((state) => {
-          Cookies.remove(ACCESS_TOKEN)
-          return {
-            ...state,
-            auth: { ...state.auth, user: null, accessToken: '' },
-          }
-        }),
-    },
-  }
-})
 
-// export const useAuth = () => useAuthStore((state) => state.auth)
+export const useAuthStore = create<AuthState>()(
+  devtools(
+    persist(
+      immer((set, get) => ({
+        userId: "",
+        accessToken: "",
+        accessTokenExpiry: "",
+        refreshToken: "",
+        refreshTokenValidityMinutes: 0,
+
+        login: ({userId, accessToken, accessTokenExpiry, refreshToken, refreshTokenValidityMinutes}) =>
+          set((state) => {
+            state.userId = userId;
+            state.accessToken = accessToken;
+            state.accessTokenExpiry = accessTokenExpiry;
+            state.refreshToken = refreshToken;
+            state.refreshTokenValidityMinutes = refreshTokenValidityMinutes;
+          }, false, 'auth/login'),
+
+        logout: () =>
+          set((state) => {
+            state.userId = "";
+            state.accessToken = "";
+            state.accessTokenExpiry = "";
+            state.refreshToken = "";
+            state.refreshTokenValidityMinutes = 0;
+          }, false, 'auth/logout'),
+
+        isAuthenticated: () => {
+          const now = new Date();
+          const accessTokenCreationTime = new Date(get().accessTokenExpiry);
+          return (
+            get().accessToken !== "" &&
+            accessTokenCreationTime > now
+          );
+        },
+
+        isRefreshTokenValid: () => {
+          if (!get().refreshToken) return false;
+
+          // 计算refreshToken的过期时间点
+          const refreshTokenCreationTime = new Date(get().accessTokenExpiry);
+          refreshTokenCreationTime.setMinutes(
+            refreshTokenCreationTime.getMinutes() - new Date(get().accessTokenExpiry).getMinutes()
+          );
+
+          const refreshTokenExpiry = new Date(refreshTokenCreationTime);
+          refreshTokenExpiry.setMinutes(
+            refreshTokenExpiry.getMinutes() + get().refreshTokenValidityMinutes
+          );
+
+          return new Date() < refreshTokenExpiry;
+        },
+        refreshTokens: ({accessToken, accessTokenExpiry}) =>
+          set((state) => {
+            state.accessToken = accessToken;
+            state.accessTokenExpiry = accessTokenExpiry
+          }, false, 'auth/refreshTokens'),
+      })),
+      {
+        name: "auth-storage",
+        partialize: (state) => ({
+          userId: state.userId,
+          accessToken: state.accessToken,
+          accessTokenExpiry: state.accessTokenExpiry,
+          refreshToken: state.refreshToken,
+          refreshTokenValidityMinutes: state.refreshTokenValidityMinutes,
+        }),
+      }
+    ),
+    {
+      name: 'AuthStore',
+      enabled: process.env.NODE_ENV !== 'production',
+    }
+  )
+);

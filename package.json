@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
-    "knip": "knip"
+    "knip": "knip",
+    "openapi": "openapi2ts"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.35.3",
@@ -42,9 +43,11 @@
     "clsx": "^2.1.1",
     "cmdk": "1.1.1",
     "date-fns": "^4.1.0",
+    "immer": "^10.1.1",
     "input-otp": "^1.4.2",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.525.0",
+    "qs": "^6.14.0",
     "react": "^19.1.0",
     "react-day-picker": "9.8.0",
     "react-dom": "^19.1.0",
@@ -68,8 +71,10 @@
     "@trivago/prettier-plugin-sort-imports": "^5.2.2",
     "@types/js-cookie": "^3.0.6",
     "@types/node": "^24.0.15",
+    "@types/qs": "^6.14.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "@umijs/openapi": "^1.13.15",
     "@vitejs/plugin-react-swc": "^3.11.0",
     "eslint": "^9.31.0",
     "eslint-plugin-react-hooks": "^5.2.0",

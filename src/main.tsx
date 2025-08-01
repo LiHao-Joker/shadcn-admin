@@ -37,7 +37,6 @@ const queryClient = new QueryClient({
     mutations: {
       onError: (error) => {
         handleServerError(error)
-
         if (error instanceof AxiosError) {
           if (error.response?.status === 304) {
             toast.error('Content not modified!')
@@ -50,13 +49,13 @@ const queryClient = new QueryClient({
     onError: (error) => {
       if (error instanceof AxiosError) {
         if (error.response?.status === 401) {
-          toast.error('Session expired!')
-          useAuthStore.getState().auth.reset()
+          toast.error('登录过期!')
+          useAuthStore.getState().logout()
           const redirect = `${router.history.location.href}`
           router.navigate({ to: '/sign-in', search: { redirect } })
         }
         if (error.response?.status === 500) {
-          toast.error('Internal Server Error!')
+          toast.error('服务器错误!')
           router.navigate({ to: '/500' })
         }
         if (error.response?.status === 403) {

@@ -14,7 +14,7 @@ export function UsersPrimaryButtons() {
         <span>Invite User</span> <IconMailPlus size={18} />
       </Button>
       <Button className='space-x-1' onClick={() => setOpen('add')}>
-        <span>Add User</span> <IconUserPlus size={18} />
+        <span>新增用户</span> <IconUserPlus size={18} />
       </Button>
     </div>
   )

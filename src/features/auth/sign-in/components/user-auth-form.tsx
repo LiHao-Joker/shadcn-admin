@@ -1,9 +1,14 @@
-import { HTMLAttributes, useState } from 'react'
+import { HTMLAttributes } from 'react'
 import { z } from 'zod'
+import { AxiosError } from 'axios'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Link } from '@tanstack/react-router'
+import { useMutation } from '@tanstack/react-query'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { IconBrandFacebook, IconBrandGithub } from '@tabler/icons-react'
+import { Route } from '@/routes/(auth)/sign-in.tsx'
+import { signInEndpoint } from '@/api/auth.ts'
+import { useAuthStore } from '@/stores/authStore.ts'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,21 +22,18 @@ import {
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
 
+import ProblemDetails = API.ProblemDetails
+
 type UserAuthFormProps = HTMLAttributes<HTMLFormElement>
 
 const formSchema = z.object({
   email: z.email({
-    error: (iss) => (iss.input === '' ? 'Please enter your email' : undefined),
+    error: (iss) => (iss.input === '' ? '请输入您的邮箱' : undefined),
   }),
-  password: z
-    .string()
-    .min(1, 'Please enter your password')
-    .min(7, 'Password must be at least 7 characters long'),
+  password: z.string().min(1, '请输入您的密码').min(7, '密码长度至少为7个字符'),
 })
 
 export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
-  const [isLoading, setIsLoading] = useState(false)
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -39,15 +41,45 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
       password: '',
     },
   })
+  const navigate = useNavigate()
+  const { login } = useAuthStore()
+  const { redirect } = Route.useSearch()
+  const { mutate, isPending: isLoading } = useMutation({
+    mutationFn: async (data: z.infer<typeof formSchema>) => {
+      return await signInEndpoint({
+        ...data,
+      })
+    },
+    onSuccess: (res) => {
+      login({
+        userId: res.data.userId,
+        accessToken: res.data.accessToken,
+        accessTokenExpiry: res.data.accessTokenExpiry,
+        refreshToken: res.data.refreshToken,
+        refreshTokenValidityMinutes: res.data.refreshTokenValidityMinutes,
+      })
+      navigate({
+        to: redirect ?? '/',
+        replace: true,
+      })
+    },
+    onError: (error: AxiosError<ProblemDetails>) => {
+      // 首先判断 error 是否为 AxiosError 实例
+      // 确认有 response 后再解构
+      const { data, status } = error.response || {}
+      if (status === 400) {
+        data!.errors.forEach((error) => {
+          form.setError(error.name as 'email' | 'password', {
+            type: 'manual',
+            message: error.reason,
+          })
+        })
+      }
+    },
+  })
 
   function onSubmit(data: z.infer<typeof formSchema>) {
-    setIsLoading(true)
-    // eslint-disable-next-line no-console
-    console.log(data)
-
-    setTimeout(() => {
-      setIsLoading(false)
-    }, 3000)
+    mutate(data)
   }
 
   return (

@@ -1,8 +1,13 @@
-import { HTMLAttributes, useState } from 'react'
+import { HTMLAttributes } from 'react'
 import { z } from 'zod'
+import { AxiosError } from 'axios'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useMutation } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
 import { IconBrandFacebook, IconBrandGithub } from '@tabler/icons-react'
+import { toast } from 'sonner'
+import { signUpEndpoint } from '@/api/auth.ts'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,45 +21,81 @@ import {
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
 
+import ProblemDetails = API.ProblemDetails
+
 type SignUpFormProps = HTMLAttributes<HTMLFormElement>
 
 const formSchema = z
   .object({
+    userName: z
+      .string()
+      .min(1, '请输入您的用户名')
+      .regex(/^[A-Za-z]+$/, '用户名只能包含英文字母'),
     email: z.email({
-      error: (iss) =>
-        iss.input === '' ? 'Please enter your email' : undefined,
+      error: (iss) => (iss.input === '' ? '请输入您的邮箱' : undefined),
     }),
+    name: z.string().min(1, '请输入您的姓名'),
     password: z
       .string()
-      .min(1, 'Please enter your password')
-      .min(7, 'Password must be at least 7 characters long'),
-    confirmPassword: z.string().min(1, 'Please confirm your password'),
+      .min(1, '请输入您的密码')
+      .min(7, '密码长度至少为7个字符'),
+    confirmPassword: z.string().min(1, '请确认您的密码'),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match.",
+    message: '两次输入的密码不匹配',
     path: ['confirmPassword'],
   })
 
 export function SignUpForm({ className, ...props }: SignUpFormProps) {
-  const [isLoading, setIsLoading] = useState(false)
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: '',
+      userName: '',
+      name: '',
       password: '',
       confirmPassword: '',
     },
   })
 
-  function onSubmit(data: z.infer<typeof formSchema>) {
-    setIsLoading(true)
-    // eslint-disable-next-line no-console
-    console.log(data)
+  const navigate = useNavigate()
 
-    setTimeout(() => {
-      setIsLoading(false)
-    }, 3000)
+  const { mutate, isPending: isLoading } = useMutation({
+    mutationFn: async (data: z.infer<typeof formSchema>) => {
+      await signUpEndpoint({
+        userName: data.userName,
+        email: data.email,
+        password: data.password,
+        name: data.name,
+      })
+    },
+    onSuccess: () => {
+      toast.success('账号创建成功！请登录。')
+      navigate({
+        to: '/sign-in',
+        replace: true,
+      })
+    },
+    onError: (error: AxiosError<ProblemDetails>) => {
+      // 首先判断 error 是否为 AxiosError 实例
+      // 确认有 response 后再解构
+      const { data, status } = error.response || {}
+      if (status === 400) {
+        data!.errors.forEach((error) => {
+          form.setError(
+            error.name as 'email' | 'password' | 'userName' | 'name',
+            {
+              type: 'system',
+              message: error.reason,
+            }
+          )
+        })
+      }
+    },
+  })
+
+  function onSubmit(data: z.infer<typeof formSchema>) {
+    mutate(data)
   }
 
   return (
@@ -66,10 +107,36 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
       >
         <FormField
           control={form.control}
+          name='userName'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>用户名</FormLabel>
+              <FormControl>
+                <Input placeholder='join' {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name='name'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>姓名</FormLabel>
+              <FormControl>
+                <Input placeholder='...' {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name='email'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>邮箱</FormLabel>
               <FormControl>
                 <Input placeholder='name@example.com' {...field} />
               </FormControl>
@@ -82,7 +149,7 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
           name='password'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>密码</FormLabel>
               <FormControl>
                 <PasswordInput placeholder='********' {...field} />
               </FormControl>
@@ -95,7 +162,7 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
           name='confirmPassword'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Confirm Password</FormLabel>
+              <FormLabel>确认密码</FormLabel>
               <FormControl>
                 <PasswordInput placeholder='********' {...field} />
               </FormControl>
@@ -104,7 +171,7 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
           )}
         />
         <Button className='mt-2' disabled={isLoading}>
-          Create Account
+          创建账号
         </Button>
 
         <div className='relative my-2'>
@@ -113,7 +180,7 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
           </div>
           <div className='relative flex justify-center text-xs uppercase'>
             <span className='bg-background text-muted-foreground px-2'>
-              Or continue with
+              或使用以下方式继续
             </span>
           </div>
         </div>
