@@ -1,21 +1,29 @@
-import { Link } from '@tanstack/react-router'
-import useDialogState from '@/hooks/use-dialog-state'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { SignOutDialog } from '@/components/sign-out-dialog'
+import { useQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
+import { getProfileEndpoint } from '@/api';
+import { useAuthStore } from '@/stores/auth-store.ts';
+import useDialogState from '@/hooks/use-dialog-state';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { SignOutDialog } from '@/components/sign-out-dialog';
+
 
 export function ProfileDropdown() {
   const [open, setOpen] = useDialogState()
+  const {auth:{setUser,isAuthenticated}}=useAuthStore();
+  const { data } = useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      const res = await getProfileEndpoint()
+      setUser({
+        ...res.data
+      })
+    },
+    enabled: isAuthenticated(),
+  })
+
+
 
   return (
     <>
@@ -60,8 +68,8 @@ export function ProfileDropdown() {
             <DropdownMenuItem>New Team</DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setOpen(true)}>
-            Sign out
+          <DropdownMenuItem variant='destructive' onClick={() => setOpen(true)}>
+            登出
             <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuContent>

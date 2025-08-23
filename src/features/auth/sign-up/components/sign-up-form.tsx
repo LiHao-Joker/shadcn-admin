@@ -1,9 +1,15 @@
-import { useState } from 'react'
+import React from 'react'
 import { z } from 'zod'
+import type { AxiosError } from 'axios'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useMutation } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
+import { type ProblemDetails, signUpEndpoint } from '@/api'
+import { toast } from 'sonner'
 import { IconFacebook, IconGithub } from '@/assets/brand-icons'
 import { cn } from '@/lib/utils'
+import { handleFormValidationErrors } from '@/utils/form.ts'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -19,27 +25,27 @@ import { PasswordInput } from '@/components/password-input'
 const formSchema = z
   .object({
     email: z.email({
-      error: (iss) =>
-        iss.input === '' ? 'Please enter your email' : undefined,
+      error: (iss) => (iss.input === '' ? '请输入您的邮箱' : undefined),
     }),
+    userName: z.string().min(1, '请输入您的用户名'),
     password: z
       .string()
-      .min(1, 'Please enter your password')
-      .min(7, 'Password must be at least 7 characters long'),
-    confirmPassword: z.string().min(1, 'Please confirm your password'),
+      .min(1, '请输入您的密码')
+      .min(7, '密码长度至少为7个字符'),
+    confirmPassword: z.string().min(1, '请确认您的密码'),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match.",
+    message: '两次输入的密码不匹配',
     path: ['confirmPassword'],
   })
+
+type SignUpForm = z.infer<typeof formSchema>
 
 export function SignUpForm({
   className,
   ...props
 }: React.HTMLAttributes<HTMLFormElement>) {
-  const [isLoading, setIsLoading] = useState(false)
-
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<SignUpForm>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: '',
@@ -47,15 +53,28 @@ export function SignUpForm({
       confirmPassword: '',
     },
   })
+  const navigate = useNavigate()
+  const { mutateAsync: signUp, isPending: isLoading } = useMutation({
+    mutationFn: async (data: SignUpForm) => {
+      return await signUpEndpoint({
+        body: {
+          ...data,
+        },
+      })
+    },
+    onSuccess: () => {
+      toast.success('注册成功')
+      navigate({
+        to: '/sign-in',
+      })
+    },
+    onError: (error: AxiosError<ProblemDetails>) => {
+      handleFormValidationErrors<SignUpForm>(error, form.setError)
+    },
+  })
 
-  function onSubmit(data: z.infer<typeof formSchema>) {
-    setIsLoading(true)
-    // eslint-disable-next-line no-console
-    console.log(data)
-
-    setTimeout(() => {
-      setIsLoading(false)
-    }, 3000)
+  async function onSubmit(data: SignUpForm) {
+    await signUp(data)
   }
 
   return (
@@ -67,10 +86,23 @@ export function SignUpForm({
       >
         <FormField
           control={form.control}
+          name='userName'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>用户名</FormLabel>
+              <FormControl>
+                <Input placeholder='name' {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name='email'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>邮箱</FormLabel>
               <FormControl>
                 <Input placeholder='name@example.com' {...field} />
               </FormControl>
@@ -83,7 +115,7 @@ export function SignUpForm({
           name='password'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>密码</FormLabel>
               <FormControl>
                 <PasswordInput placeholder='********' {...field} />
               </FormControl>
@@ -96,7 +128,7 @@ export function SignUpForm({
           name='confirmPassword'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Confirm Password</FormLabel>
+              <FormLabel>确认密码</FormLabel>
               <FormControl>
                 <PasswordInput placeholder='********' {...field} />
               </FormControl>
@@ -105,7 +137,7 @@ export function SignUpForm({
           )}
         />
         <Button className='mt-2' disabled={isLoading}>
-          Create Account
+          注册
         </Button>
 
         <div className='relative my-2'>

@@ -1,7 +1,7 @@
 {
   "name": "shadcn-admin",
   "private": false,
-  "version": "2.0.0",
+  "version": "2.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
-    "knip": "knip"
+    "knip": "knip",
+    "openapi": "openapi-ts"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.42.1",
@@ -60,6 +61,7 @@
   "devDependencies": {
     "@eslint/js": "^9.33.0",
     "@faker-js/faker": "^9.9.0",
+    "@hey-api/openapi-ts": "0.81.1",
     "@tanstack/eslint-plugin-query": "^5.83.1",
     "@tanstack/react-query-devtools": "^5.85.3",
     "@tanstack/react-router-devtools": "^1.131.16",

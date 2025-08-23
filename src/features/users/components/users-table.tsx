@@ -80,6 +80,8 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
       columnFilters,
       columnVisibility,
     },
+
+
     enableRowSelection: true,
     onPaginationChange,
     onColumnFiltersChange,

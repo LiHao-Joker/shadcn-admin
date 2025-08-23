@@ -1,13 +1,18 @@
-import { useState } from 'react'
+import React from 'react'
 import { z } from 'zod'
+import { type AxiosError } from 'axios'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useMutation } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
+import { type ProblemDetails, signInEndpoint } from '@/api'
+import { Route } from '@/routes/(auth)/sign-in.tsx'
 import { Loader2, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
 import { IconFacebook, IconGithub } from '@/assets/brand-icons'
 import { useAuthStore } from '@/stores/auth-store'
-import { sleep, cn } from '@/lib/utils'
+import { cn } from '@/lib/utils'
+import { handleFormValidationErrors } from '@/utils/form.ts'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -22,13 +27,12 @@ import { PasswordInput } from '@/components/password-input'
 
 const formSchema = z.object({
   email: z.email({
-    error: (iss) => (iss.input === '' ? 'Please enter your email' : undefined),
+    error: (iss) => (iss.input === '' ? '请输入您的邮箱' : undefined),
   }),
-  password: z
-    .string()
-    .min(1, 'Please enter your password')
-    .min(7, 'Password must be at least 7 characters long'),
+  password: z.string().min(1, '请输入您的密码').min(7, '密码长度至少为7个字符'),
 })
+
+type Form = z.infer<typeof formSchema>
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLFormElement> {
   redirectTo?: string
@@ -39,11 +43,10 @@ export function UserAuthForm({
   redirectTo,
   ...props
 }: UserAuthFormProps) {
-  const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
   const { auth } = useAuthStore()
-
-  const form = useForm<z.infer<typeof formSchema>>({
+  const { redirect } = Route.useSearch()
+  const form = useForm<Form>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: '',
@@ -51,34 +54,33 @@ export function UserAuthForm({
     },
   })
 
-  function onSubmit(data: z.infer<typeof formSchema>) {
-    setIsLoading(true)
+  const { mutate: signIn, isPending: isLoading } = useMutation({
+    mutationFn: async (input: Form) => {
+      return await signInEndpoint({
+        body: {
+          ...input,
+        },
+      })
+    },
+    onSuccess: (res) => {
+      const { data } = res
+      auth.setToken({
+        ...data,
+        accessTokenExpiry: new Date(data.accessTokenExpiry),
+      })
+      toast.success('登录成功')
+      navigate({
+        to: redirect ?? '/',
+        replace: true,
+      })
+    },
+    onError: (error: AxiosError<ProblemDetails>) => {
+      handleFormValidationErrors<Form>(error, form.setError)
+    },
+  })
 
-    // Mock successful authentication
-    const mockUser = {
-      accountNo: 'ACC001',
-      email: data.email,
-      role: ['user'],
-      exp: Date.now() + 24 * 60 * 60 * 1000, // 24 hours from now
-    }
-
-    toast.promise(sleep(2000), {
-      loading: 'Signing in...',
-      success: () => {
-        setIsLoading(false)
-
-        // Set user and access token
-        auth.setUser(mockUser)
-        auth.setAccessToken('mock-access-token')
-
-        // Redirect to the stored location or default to dashboard
-        const targetPath = redirectTo || '/'
-        navigate({ to: targetPath, replace: true })
-
-        return `Welcome back, ${data.email}!`
-      },
-      error: 'Error',
-    })
+  function onSubmit(data: Form) {
+    signIn(data)
   }
 
   return (
@@ -93,7 +95,7 @@ export function UserAuthForm({
           name='email'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>邮箱</FormLabel>
               <FormControl>
                 <Input placeholder='name@example.com' {...field} />
               </FormControl>
@@ -106,7 +108,7 @@ export function UserAuthForm({
           name='password'
           render={({ field }) => (
             <FormItem className='relative'>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>密码</FormLabel>
               <FormControl>
                 <PasswordInput placeholder='********' {...field} />
               </FormControl>
@@ -115,14 +117,14 @@ export function UserAuthForm({
                 to='/forgot-password'
                 className='text-muted-foreground absolute end-0 -top-0.5 text-sm font-medium hover:opacity-75'
               >
-                Forgot password?
+                忘记密码?
               </Link>
             </FormItem>
           )}
         />
         <Button className='mt-2' disabled={isLoading}>
           {isLoading ? <Loader2 className='animate-spin' /> : <LogIn />}
-          Sign in
+          登录
         </Button>
 
         <div className='relative my-2'>
