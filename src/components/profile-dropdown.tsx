@@ -17,6 +17,9 @@ export function ProfileDropdown() {
     queryFn: async () => {
       const res = await getProfileEndpoint()
       setUser({
+
+
+
         ...res.data
       })
     },
