@@ -19,97 +19,47 @@ import { routeTree } from './routeTree.gen'
 // Styles
 import './styles/index.css'
 
-// 存储刷新状态和等待的请求队列
-let isRefreshing = false
-let failedQueue: Array<{
-  resolve: (token: string) => void
-  reject: (error: AxiosError) => void
-}> = []
-
-// 处理队列中的请求重试
-const processQueue = (
-  error: AxiosError | null,
-  token: string | null = null
-) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error)
-    } else if (token) {
-      prom.resolve(token)
-    } else {
-      prom.reject({
-        ...new Error('Token refresh failed with no error'),
-        isAxiosError: true,
-        toJSON: () => ({ message: 'Token refresh failed with no error' }),
-      } as AxiosError)
-    }
-  })
-  failedQueue = []
-}
-
 client.instance.interceptors.request.use(
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  async (config) => {
-    const authStore = useAuthStore.getState()
-    const { token } = authStore.auth
-    // 如果没有令牌，直接返回配置
-    if (!token) return config
-
-    // 检查访问令牌是否过期
-    const isExpired = token.accessTokenExpiry <= new Date()
-
-    // 令牌未过期，直接添加到请求头
-    if (!isExpired) {
-      config.headers.Authorization = `Bearer ${token.accessToken}`
-      return config
+  (config) => {
+    const token = useAuthStore.getState().auth.token?.accessToken
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
     }
-
-    if (isExpired) {
-      // 如果正在刷新中，将当前请求加入队列等待
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject })
-        })
-          .then((newToken) => {
-            config.headers.Authorization = `Bearer ${newToken}`
-            return config
-          })
-          .catch((err) => Promise.reject(err))
-      }
-      // 标记为正在刷新
-      isRefreshing = true
-
-      try {
-        // 刷新令牌
-        const newAccessToken = await refreshToken()
-        // 处理等待队列
-        processQueue(null, token.accessToken)
-
-        // 使用新令牌继续当前请求
-        return {
-          ...config,
-          headers: {
-            ...config.headers,
-            Authorization: `Bearer ${newAccessToken}`,
-          },
-        }
-      } catch (error) {
-        // 刷新失败处理
-        processQueue(error as AxiosError)
-        authStore.auth.resetToken() // 清除无效令牌
-        throw error
-      } finally {
-        isRefreshing = false
-      }
-    }
+    return config
   },
   (error: AxiosError) => Promise.reject(error)
 )
 
+// 状态锁：防止并发401错误导致的多次刷新令牌
+let isRefreshing = false
+
 client.instance.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
+    const { response } = error
+    if (response) {
+      const { status, config } = response
+
+      if (status === 401 && !config.url?.includes('/refresh-token')) {
+        // 如果正在刷新令牌，则等待完成后直接重试
+        if (isRefreshing) {
+          // 简单等待后重试，避免立即重试仍未获取到新令牌
+          await new Promise((resolve) => setTimeout(resolve, 500))
+          return client.instance(config)
+        }
+        // 标记正在刷新令牌
+        isRefreshing = true
+        try {
+          const res = await refreshToken()
+          if (res.status == 200) {
+            return await client.instance(config)
+          }
+        } finally {
+          // 无论刷新成功与否，都释放锁
+          isRefreshing = false
+        }
+      }
+    }
     return Promise.reject(error)
   }
 )

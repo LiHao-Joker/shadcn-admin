@@ -5,11 +5,11 @@ import { getCookie, setCookie, removeCookie } from '@/lib/cookies'
 const TOKEN = 'thisisjustarandomstring'
 
 interface AuthUser {
+  id: string
   name: string
-  avatar:string
+  avatar: string
   email: string
-  role: string[]
-  exp: number
+  role: string
 }
 
 interface AuthToken {

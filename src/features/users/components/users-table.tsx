@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   type SortingState,
   type VisibilityState,
@@ -11,6 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { getPaginationUsersEndpoint } from '@/api'
 import { cn } from '@/lib/utils'
 import { type NavigateFn, useTableUrlState } from '@/hooks/use-table-url-state'
 import {
@@ -22,8 +24,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table'
-import { roles } from '../data/data'
-import { type User } from '../data/schema'
 import { DataTableBulkActions } from './data-table-bulk-actions'
 import { usersColumns as columns } from './users-columns'
 
@@ -35,12 +35,11 @@ declare module '@tanstack/react-table' {
 }
 
 type DataTableProps = {
-  data: User[]
   search: Record<string, unknown>
   navigate: NavigateFn
 }
 
-export function UsersTable({ data, search, navigate }: DataTableProps) {
+export function UsersTable({ search, navigate }: DataTableProps) {
   // Local UI-only states
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
@@ -64,14 +63,40 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
     globalFilter: { enabled: false },
     columnFilters: [
       // username per-column text filter
-      { columnId: 'username', searchKey: 'username', type: 'string' },
-      { columnId: 'status', searchKey: 'status', type: 'array' },
-      { columnId: 'role', searchKey: 'role', type: 'array' },
+      { columnId: 'userName', searchKey: 'userName', type: 'string' },
+      { columnId: 'email', searchKey: 'Email', type: 'string' },
+      // { columnId: 'status', searchKey: 'status', type: 'array' },
+      // { columnId: 'role', searchKey: 'role', type: 'array' },
     ],
   })
 
+  const { data } = useQuery({
+    queryKey: [
+      'users',
+      pagination.pageSize,
+      pagination.pageIndex,
+      columnFilters,
+      sorting,
+    ], // 第一个参数是查询键
+    queryFn: async () => {
+      // 第二个参数是查询函数
+      const res = await getPaginationUsersEndpoint({
+        query: {
+          pageSize: pagination.pageSize,
+          pageIndex: pagination.pageIndex + 1,
+          search: columnFilters.find((c) => c.id === 'userName')
+            ?.value as string,
+          sort: sorting
+            .map((s) => `${s.id} ${s.desc ? 'desc' : 'asc'}`)
+            ?.join(', '),
+        },
+      })
+      return res.data
+    },
+  })
+
   const table = useReactTable({
-    data,
+    data: data?.items ?? [],
     columns,
     state: {
       sorting,
@@ -80,18 +105,25 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
       columnFilters,
       columnVisibility,
     },
+    manualPagination: true,
+    rowCount: data?.totalCount || 0,
+    pageCount: data?.totalPages || 0,
+    onPaginationChange,
 
+    manualFiltering: true,
+
+    manualSorting: true,
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
 
     enableRowSelection: true,
-    onPaginationChange,
     onColumnFiltersChange,
     onRowSelectionChange: setRowSelection,
-    onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
     getPaginationRowModel: getPaginationRowModel(),
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
+
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
@@ -104,26 +136,10 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
     <div className='space-y-4 max-sm:has-[div[role="toolbar"]]:mb-16'>
       <DataTableToolbar
         table={table}
-        searchPlaceholder='Filter users...'
-        searchKey='username'
-        filters={[
-          {
-            columnId: 'status',
-            title: 'Status',
-            options: [
-              { label: 'Active', value: 'active' },
-              { label: 'Inactive', value: 'inactive' },
-              { label: 'Invited', value: 'invited' },
-              { label: 'Suspended', value: 'suspended' },
-            ],
-          },
-          {
-            columnId: 'role',
-            title: 'Role',
-            options: roles.map((role) => ({ ...role })),
-          },
-        ]}
+        searchKey='userName'
+        searchPlaceholder='用户名'
       />
+
       <div className='overflow-hidden rounded-md border'>
         <Table>
           <TableHeader>

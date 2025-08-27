@@ -1,7 +1,5 @@
+import { useUsers } from '@/features/users/components/users-provider.tsx'
 import { UsersActionDialog } from './users-action-dialog'
-import { UsersDeleteDialog } from './users-delete-dialog'
-import { UsersInviteDialog } from './users-invite-dialog'
-import { useUsers } from './users-provider'
 
 export function UsersDialogs() {
   const { open, setOpen, currentRow, setCurrentRow } = useUsers()
@@ -13,11 +11,11 @@ export function UsersDialogs() {
         onOpenChange={() => setOpen('add')}
       />
 
-      <UsersInviteDialog
-        key='user-invite'
-        open={open === 'invite'}
-        onOpenChange={() => setOpen('invite')}
-      />
+      {/*<UsersInviteDialog*/}
+      {/*  key='user-invite'*/}
+      {/*  open={open === 'invite'}*/}
+      {/*  onOpenChange={() => setOpen('invite')}*/}
+      {/*/>*/}
 
       {currentRow && (
         <>
@@ -33,17 +31,17 @@ export function UsersDialogs() {
             currentRow={currentRow}
           />
 
-          <UsersDeleteDialog
-            key={`user-delete-${currentRow.id}`}
-            open={open === 'delete'}
-            onOpenChange={() => {
-              setOpen('delete')
-              setTimeout(() => {
-                setCurrentRow(null)
-              }, 500)
-            }}
-            currentRow={currentRow}
-          />
+          {/*<UsersDeleteDialog*/}
+          {/*  key={`user-delete-${currentRow.id}`}*/}
+          {/*  open={open === 'delete'}*/}
+          {/*  onOpenChange={() => {*/}
+          {/*    setOpen('delete')*/}
+          {/*    setTimeout(() => {*/}
+          {/*      setCurrentRow(null)*/}
+          {/*    }, 500)*/}
+          {/*  }}*/}
+          {/*  currentRow={currentRow}*/}
+          {/*/>*/}
         </>
       )}
     </>

@@ -39,7 +39,7 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
               ))}
             </SidebarContent>
             <SidebarFooter>
-              <NavUser user={sidebarData.user} />
+              <NavUser  />
             </SidebarFooter>
             <SidebarRail />
           </AppSidebar>
