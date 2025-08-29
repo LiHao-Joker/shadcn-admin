@@ -12,7 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { getPaginationUsersEndpoint } from '@/api'
+import { getPaginationUsersEndpoint, getRolesEndpoint } from '@/api'
 import { cn } from '@/lib/utils'
 import { type NavigateFn, useTableUrlState } from '@/hooks/use-table-url-state'
 import {
@@ -24,15 +24,9 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table'
+import { useUsers } from '@/features/users/components/users-provider.tsx'
 import { DataTableBulkActions } from './data-table-bulk-actions'
 import { usersColumns as columns } from './users-columns'
-
-declare module '@tanstack/react-table' {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  interface ColumnMeta<TData, TValue> {
-    className: string
-  }
-}
 
 type DataTableProps = {
   search: Record<string, unknown>
@@ -45,11 +39,8 @@ export function UsersTable({ search, navigate }: DataTableProps) {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [sorting, setSorting] = useState<SortingState>([])
 
-  // Local state management for table (uncomment to use local-only state, not synced with URL)
-  // const [columnFilters, onColumnFiltersChange] = useState<ColumnFiltersState>([])
-  // const [pagination, onPaginationChange] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
+  const { open, setRoles, roles: roless } = useUsers()
 
-  // Synced with URL states (keys/defaults mirror users route search schema)
   const {
     columnFilters,
     onColumnFiltersChange,
@@ -64,20 +55,20 @@ export function UsersTable({ search, navigate }: DataTableProps) {
     columnFilters: [
       // username per-column text filter
       { columnId: 'userName', searchKey: 'userName', type: 'string' },
-      { columnId: 'email', searchKey: 'Email', type: 'string' },
+      // { columnId: 'email', searchKey: 'Email', type: 'string' },
       // { columnId: 'status', searchKey: 'status', type: 'array' },
-      // { columnId: 'role', searchKey: 'role', type: 'array' },
+      { columnId: 'role', searchKey: 'role', type: 'array' },
     ],
   })
 
-  const { data } = useQuery({
+  const { data: users, refetch } = useQuery({
     queryKey: [
       'users',
       pagination.pageSize,
       pagination.pageIndex,
       columnFilters,
       sorting,
-    ], // 第一个参数是查询键
+    ],
     queryFn: async () => {
       // 第二个参数是查询函数
       const res = await getPaginationUsersEndpoint({
@@ -89,14 +80,37 @@ export function UsersTable({ search, navigate }: DataTableProps) {
           sort: sorting
             .map((s) => `${s.id} ${s.desc ? 'desc' : 'asc'}`)
             ?.join(', '),
+          roles: columnFilters.find((c) => c.id === 'role')?.value as string[],
         },
       })
       return res.data
     },
   })
 
+  const { data: roles, isSuccess } = useQuery({
+    queryKey: ['roles'],
+    queryFn: async () => {
+      const res = await getRolesEndpoint({
+        query: {
+          isActive: true,
+        },
+      })
+      return res.data
+    },
+  })
+
+  useEffect(() => {
+    if (open === null) {
+      refetch()
+    }
+  }, [open, refetch])
+
+  useEffect(() => {
+    if (isSuccess) setRoles(roles!.items)
+  }, [roles, setRoles, isSuccess])
+
   const table = useReactTable({
-    data: data?.items ?? [],
+    data: users?.items ?? [],
     columns,
     state: {
       sorting,
@@ -106,8 +120,8 @@ export function UsersTable({ search, navigate }: DataTableProps) {
       columnVisibility,
     },
     manualPagination: true,
-    rowCount: data?.totalCount || 0,
-    pageCount: data?.totalPages || 0,
+    rowCount: users?.totalCount || 0,
+    pageCount: users?.totalPages || 0,
     onPaginationChange,
 
     manualFiltering: true,
@@ -136,10 +150,19 @@ export function UsersTable({ search, navigate }: DataTableProps) {
     <div className='space-y-4 max-sm:has-[div[role="toolbar"]]:mb-16'>
       <DataTableToolbar
         table={table}
-        searchKey='userName'
-        searchPlaceholder='用户名'
+        searchKey={'userName'}
+        searchPlaceholder='搜索用户名...'
+        filters={[
+          {
+            columnId: 'role',
+            title: '角色',
+            options: roless!.map((role) => ({
+              value: role.id,
+              label: role.name,
+            })),
+          },
+        ]}
       />
-
       <div className='overflow-hidden rounded-md border'>
         <Table>
           <TableHeader>

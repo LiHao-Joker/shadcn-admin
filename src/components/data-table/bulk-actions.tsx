@@ -121,7 +121,7 @@ export function DataTableBulkActions<TData>({
 
   return (
     <>
-      {/* Live region for screen reader announcements */}
+      {/* 屏幕阅读器实时播报区域 */}
       <div
         aria-live='polite'
         aria-atomic='true'
@@ -134,7 +134,7 @@ export function DataTableBulkActions<TData>({
       <div
         ref={toolbarRef}
         role='toolbar'
-        aria-label={`Bulk actions for ${selectedCount} selected ${entityName}${selectedCount > 1 ? 's' : ''}`}
+        aria-label={`${selectedCount}个选中${entityName}的批量操作`}
         aria-describedby='bulk-actions-description'
         tabIndex={-1}
         onKeyDown={handleKeyDown}
@@ -159,15 +159,15 @@ export function DataTableBulkActions<TData>({
                 size='icon'
                 onClick={handleClearSelection}
                 className='size-6 rounded-full'
-                aria-label='Clear selection'
-                title='Clear selection (Escape)'
+                aria-label='清除选择'
+                title='清除选择 (Esc)'
               >
                 <X />
-                <span className='sr-only'>Clear selection</span>
+                <span className='sr-only'>清除选择</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Clear selection (Escape)</p>
+              <p>清除选择 (Esc)</p>
             </TooltipContent>
           </Tooltip>
 
@@ -184,15 +184,11 @@ export function DataTableBulkActions<TData>({
             <Badge
               variant='default'
               className='min-w-8 rounded-lg'
-              aria-label={`${selectedCount} selected`}
+              aria-label={`${selectedCount}个已选中`}
             >
               {selectedCount}
             </Badge>{' '}
-            <span className='hidden sm:inline'>
-              {entityName}
-              {selectedCount > 1 ? 's' : ''}
-            </span>{' '}
-            selected
+            <span className='hidden sm:inline'>个{entityName}已选中</span>
           </div>
 
           <Separator

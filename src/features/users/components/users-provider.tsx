@@ -1,14 +1,23 @@
 import React, { useState } from 'react'
+import { type RoleDto, type UserDto } from '@/api'
 import useDialogState from '@/hooks/use-dialog-state'
-import { type UserDto } from '@/api'
 
-type UsersDialogType = 'invite' | 'add' | 'edit' | 'delete'
+type UsersDialogType =
+  | 'invite'
+  | 'add'
+  | 'edit'
+  | 'delete'
+  | 'status'
+  | 'resetpassword'
 
 type UsersContextType = {
   open: UsersDialogType | null
   setOpen: (str: UsersDialogType | null) => void
   currentRow: UserDto | null
   setCurrentRow: React.Dispatch<React.SetStateAction<UserDto | null>>
+
+  roles: RoleDto[]
+  setRoles: (roles: RoleDto[]) => void
 }
 
 const UsersContext = React.createContext<UsersContextType | null>(null)
@@ -16,9 +25,11 @@ const UsersContext = React.createContext<UsersContextType | null>(null)
 export function UsersProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useDialogState<UsersDialogType>(null)
   const [currentRow, setCurrentRow] = useState<UserDto | null>(null)
-
+  const [roles, setRoles] = useState<RoleDto[]>([])
   return (
-    <UsersContext value={{ open, setOpen, currentRow, setCurrentRow }}>
+    <UsersContext
+      value={{ open, setOpen, currentRow, setCurrentRow, roles, setRoles }}
+    >
       {children}
     </UsersContext>
   )

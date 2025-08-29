@@ -29,7 +29,7 @@ const formSchema = z.object({
   email: z.email({
     error: (iss) => (iss.input === '' ? '请输入您的邮箱' : undefined),
   }),
-  password: z.string().min(1, '请输入您的密码').min(7, '密码长度至少为7个字符'),
+  password: z.string().min(1, '请输入您的密码'),
 })
 
 type Form = z.infer<typeof formSchema>

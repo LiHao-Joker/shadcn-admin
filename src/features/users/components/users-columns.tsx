@@ -1,12 +1,12 @@
 import { type ColumnDef } from '@tanstack/react-table'
+import { type UserDto } from '@/api'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { DataTableColumnHeader } from '@/components/data-table'
 import { LongText } from '@/components/long-text'
-import { callTypes } from '../data/data'
+import { callTypes, roles } from '../data/data'
 import { DataTableRowActions } from './data-table-row-actions'
-import { type UserDto } from '@/api'
 
 export const usersColumns: ColumnDef<UserDto>[] = [
   {
@@ -39,7 +39,10 @@ export const usersColumns: ColumnDef<UserDto>[] = [
   {
     accessorKey: 'userName',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Username' />
+      <DataTableColumnHeader
+        column={column}
+        title={column.columnDef.meta?.label}
+      />
     ),
     cell: ({ row }) => (
       <LongText className='max-w-36 ps-3'>{row.getValue('userName')}</LongText>
@@ -49,23 +52,36 @@ export const usersColumns: ColumnDef<UserDto>[] = [
         'drop-shadow-[0_1px_2px_rgb(0_0_0_/_0.1)] dark:drop-shadow-[0_1px_2px_rgb(255_255_255_/_0.1)]',
         'sticky start-6 @4xl/content:table-cell @4xl/content:drop-shadow-none'
       ),
+      label: '用户名',
     },
     enableHiding: false,
   },
   {
     accessorKey: 'email',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Email' />
+      <DataTableColumnHeader
+        column={column}
+        title={column.columnDef.meta?.label}
+      />
     ),
     cell: ({ row }) => (
       <div className='w-fit text-nowrap'>{row.getValue('email')}</div>
     ),
+    meta: {
+      label: '邮箱',
+    },
   },
   {
     accessorKey: 'isActive',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Active' />
+      <DataTableColumnHeader
+        column={column}
+        title={column.columnDef.meta?.label}
+      />
     ),
+    meta: {
+      label: '状态',
+    },
     cell: ({ row }) => {
       const { isActive } = row.original
       const badgeColor = callTypes.get(isActive)
@@ -83,10 +99,13 @@ export const usersColumns: ColumnDef<UserDto>[] = [
     enableHiding: false,
     enableSorting: false,
   },
-/*  {
+  {
     accessorKey: 'role',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Role' />
+      <DataTableColumnHeader
+        column={column}
+        title={column.columnDef.meta?.label}
+      />
     ),
     cell: ({ row }) => {
       const { role } = row.original
@@ -108,9 +127,12 @@ export const usersColumns: ColumnDef<UserDto>[] = [
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id))
     },
-    enableSorting: false,
+    meta: {
+      label: '角色',
+    },
+    enableSorting: true,
     enableHiding: false,
-  },*/
+  },
   {
     id: 'actions',
     cell: DataTableRowActions,

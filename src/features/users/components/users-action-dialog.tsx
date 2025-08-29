@@ -5,8 +5,12 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { getUserByIdEndpoint, type UserDto } from '@/api'
-import { showSubmittedData } from '@/lib/show-submitted-data'
+import {
+  createUserEndpoint,
+  getUserByIdEndpoint,
+  updateUserEndpoint,
+  type UserDto,
+} from '@/api'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -26,13 +30,16 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch.tsx'
+import { SelectDropdown } from '@/components/select-dropdown.tsx'
+import { useUsers } from '@/features/users/components/users-provider.tsx'
 
 const formSchema = z.object({
-  userName: z.string().min(1, 'Username is required.'),
+  userName: z.string().min(1, '用户名不能为空'),
   email: z.email({
-    error: (iss) => (iss.input === '' ? 'Email is required.' : undefined),
+    error: (iss) =>
+      iss.input === '' ? '邮箱不能为空' : '请输入有效的邮箱地址',
   }),
-  role: z.string().min(1, 'Role is required.'),
+  roleId: z.string().min(1, '请选择角色'),
   isActive: z.boolean(),
 })
 type UserForm = z.infer<typeof formSchema>
@@ -49,7 +56,7 @@ export function UsersActionDialog({
   onOpenChange,
 }: UserActionDialogProps) {
   const isEdit = !!currentRow
-
+  const { roles } = useUsers()
   const { data: currentUser } = useQuery({
     queryKey: ['user', currentRow?.id],
     queryFn: async () => {
@@ -72,17 +79,28 @@ export function UsersActionDialog({
     form.reset({
       userName: currentUser?.userName || '',
       email: currentUser?.email || '',
-      role: currentUser?.role || '',
+      roleId: roles?.find((r) => r.name === currentUser?.role)?.id || '',
       isActive: currentUser?.isActive || false,
     })
-  }, [currentUser, form])
+  }, [currentUser, form, roles])
 
   const { mutateAsync } = useMutation({
     mutationFn: async (data: UserForm) => {
       if (isEdit) {
-        // update user
+        await updateUserEndpoint({
+          path: {
+            id: currentUser?.id as string,
+          },
+          body: {
+            ...data,
+          },
+        })
       } else {
-        // create user
+        await createUserEndpoint({
+          body: {
+            ...data,
+          },
+        })
       }
     },
   })
@@ -103,10 +121,10 @@ export function UsersActionDialog({
     >
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader className='text-start'>
-          <DialogTitle>{isEdit ? 'Edit User' : 'Add New User'}</DialogTitle>
+          <DialogTitle>{isEdit ? '编辑用户' : '添加新用户'}</DialogTitle>
           <DialogDescription>
-            {isEdit ? 'Update the user here. ' : 'Create new user here. '}
-            Click save when you&apos;re done.
+            {isEdit ? '在这里添加用户. ' : '在这里新建用户. '}
+            完成后点击保存按钮.
           </DialogDescription>
         </DialogHeader>
         <div className='h-[26.25rem] w-[calc(100%+0.75rem)] overflow-y-auto py-1 pe-3'>
@@ -122,7 +140,7 @@ export function UsersActionDialog({
                 render={({ field }) => (
                   <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
                     <FormLabel className='col-span-2 text-end'>
-                      Username
+                      用户名
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -140,7 +158,7 @@ export function UsersActionDialog({
                 name='email'
                 render={({ field }) => (
                   <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
-                    <FormLabel className='col-span-2 text-end'>Email</FormLabel>
+                    <FormLabel className='col-span-2 text-end'>邮箱</FormLabel>
                     <FormControl>
                       <Input
                         placeholder='john.doe@gmail.com'
@@ -170,32 +188,35 @@ export function UsersActionDialog({
                 )}
               />
 
-              {/*<FormField*/}
-              {/*  control={form.control}*/}
-              {/*  name='role'*/}
-              {/*  render={({ field }) => (*/}
-              {/*    <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>*/}
-              {/*      <FormLabel className='col-span-2 text-end'>Role</FormLabel>*/}
-              {/*      <SelectDropdown*/}
-              {/*        defaultValue={field.value}*/}
-              {/*        onValueChange={field.onChange}*/}
-              {/*        placeholder='Select a role'*/}
-              {/*        className='col-span-4'*/}
-              {/*        items={roles.map(({ label, value }) => ({*/}
-              {/*          label,*/}
-              {/*          value,*/}
-              {/*        }))}*/}
-              {/*      />*/}
-              {/*      <FormMessage className='col-span-4 col-start-3' />*/}
-              {/*    </FormItem>*/}
-              {/*  )}*/}
-              {/*/>*/}
+              <FormField
+                control={form.control}
+                name='roleId'
+                render={({ field }) => (
+                  <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
+                    <FormLabel className='col-span-2 text-end'>角色</FormLabel>
+                    <SelectDropdown
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                      placeholder='Select a role'
+                      className='col-span-4'
+                      isControlled={true}
+                      items={
+                        roles?.map((role) => ({
+                          label: role.name,
+                          value: role.id,
+                        })) || []
+                      }
+                    />
+                    <FormMessage className='col-span-4 col-start-3' />
+                  </FormItem>
+                )}
+              />
             </form>
           </Form>
         </div>
         <DialogFooter>
           <Button type='submit' form='user-form'>
-            Save changes
+            保存
           </Button>
         </DialogFooter>
       </DialogContent>
