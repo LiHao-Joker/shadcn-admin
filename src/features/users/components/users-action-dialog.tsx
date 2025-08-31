@@ -197,7 +197,7 @@ export function UsersActionDialog({
                     <SelectDropdown
                       defaultValue={field.value}
                       onValueChange={field.onChange}
-                      placeholder='Select a role'
+                      placeholder='选择角色'
                       className='col-span-4'
                       isControlled={true}
                       items={
