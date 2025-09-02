@@ -16,6 +16,7 @@ import {
   UserCog,
   UserX,
   Users,
+  Tags,
   MessagesSquare,
   ShieldCheck,
   AudioWaveform,
@@ -77,6 +78,11 @@ export const sidebarData: SidebarData = {
           title: '用户管理',
           url: '/users',
           icon: Users,
+        },
+        {
+          title: '分类管理',
+          url: '/categories',
+          icon: Tags,
         },
         {
           title: 'Secured by Clerk',

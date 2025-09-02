@@ -1,20 +1,18 @@
-'use client'
-
-import { useEffect } from 'react'
-import { z } from 'zod'
+﻿import { useEffect } from 'react'
+import z from 'zod'
 import type { AxiosError } from 'axios'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
-  createUserEndpoint,
-  getUserByIdEndpoint,
+  type CategoryDto,
+  createCategoryEndpoint,
+  getCategoriesByIdEndpoint,
   type ProblemDetails,
-  updateUserEndpoint,
-  type UserDto,
+  updateCategoryEndpoint,
 } from '@/api'
 import { handleFormValidationErrors } from '@/utils/form.ts'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/button.tsx'
 import {
   Dialog,
   DialogContent,
@@ -30,40 +28,43 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
+} from '@/components/ui/form.tsx'
+import { Input } from '@/components/ui/input.tsx'
 import { Switch } from '@/components/ui/switch.tsx'
+import { Textarea } from '@/components/ui/textarea.tsx'
 import { SelectDropdown } from '@/components/select-dropdown.tsx'
-import { useUsers } from '@/features/users/components/users-provider.tsx'
+import { categoryTypes } from '@/features/categories/data/data.ts'
 
-const formSchema = z.object({
-  userName: z.string().min(1, '用户名不能为空'),
-  email: z.email({
-    error: (iss) =>
-      iss.input === '' ? '邮箱不能为空' : '请输入有效的邮箱地址',
-  }),
-  roleId: z.string().min(1, '请选择角色'),
+const formShema = z.object({
+  name: z.string().min(1, '名称不能为空'),
+  type: z.string().min(1, '请选择类别'),
+  description: z.string().optional(),
   isActive: z.boolean(),
 })
-type UserForm = z.infer<typeof formSchema>
 
-type UserActionDialogProps = {
-  currentRow?: UserDto
+type CategoryForm = z.infer<typeof formShema>
+
+type CategoriesActionDialogProps = {
+  currentRow?: CategoryDto
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export function UsersActionDialog({
+function CategoriesActionDialog({
   currentRow,
   open,
   onOpenChange,
-}: UserActionDialogProps) {
+}: CategoriesActionDialogProps) {
   const isEdit = !!currentRow
-  const { roles } = useUsers()
-  const { data: currentUser } = useQuery({
-    queryKey: ['user', currentRow?.id],
+
+  const form = useForm<CategoryForm>({
+    resolver: zodResolver(formShema),
+  })
+
+  const { data: currentCategory, isSuccess } = useQuery({
+    queryKey: ['category', currentRow?.id],
     queryFn: async () => {
-      const res = await getUserByIdEndpoint({
+      const res = await getCategoriesByIdEndpoint({
         path: {
           id: currentRow!.id,
         },
@@ -72,51 +73,47 @@ export function UsersActionDialog({
     },
     enabled: isEdit,
   })
-
-  const form = useForm<UserForm>({
-    resolver: zodResolver(formSchema),
-  })
-
-  //赋值
   useEffect(() => {
     form.reset({
-      userName: currentUser?.userName || '',
-      email: currentUser?.email || '',
-      roleId: roles?.find((r) => r.name === currentUser?.role)?.id || '',
-      isActive: currentUser?.isActive || false,
+      name: currentCategory?.name || '',
+      type: currentCategory?.type || '',
+      description: currentCategory?.description || '',
+      isActive: currentCategory?.isActive ?? true,
     })
-  }, [currentUser, form, roles])
+  }, [form, isSuccess, currentCategory])
 
-  const { mutateAsync } = useMutation({
-    mutationFn: async (data: UserForm) => {
+  const { mutateAsync: actionCategory } = useMutation({
+    mutationFn: async (data: CategoryForm) => {
+      const type = data.type as 'dishes' | 'comboMeals'
       if (isEdit) {
-        await updateUserEndpoint({
-          path: {
-            id: currentUser?.id as string,
-          },
+        // 编辑
+        await updateCategoryEndpoint({
+          path: { id: currentRow!.id },
           body: {
             ...data,
+            type: type,
           },
         })
       } else {
-        await createUserEndpoint({
+        // 新建
+        await createCategoryEndpoint({
           body: {
             ...data,
+            type: type,
           },
         })
       }
     },
     onError: (error: AxiosError<ProblemDetails>) => {
-      handleFormValidationErrors<UserForm>(error, form.setError)
+      handleFormValidationErrors<CategoryForm>(error, form.setError)
     },
   })
 
-  const onSubmit = async (values: UserForm) => {
+  const onSubmit = async (data: CategoryForm) => {
+    await actionCategory(data)
     form.reset()
-    await mutateAsync(values)
     onOpenChange(false)
   }
-
   return (
     <Dialog
       open={open}
@@ -127,30 +124,28 @@ export function UsersActionDialog({
     >
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader className='text-start'>
-          <DialogTitle>{isEdit ? '编辑用户' : '添加新用户'}</DialogTitle>
+          <DialogTitle>{isEdit ? '编辑分类' : '添加新分类'}</DialogTitle>
           <DialogDescription>
-            {isEdit ? '在这里添加用户. ' : '在这里新建用户. '}
+            {isEdit ? '在这里添加分类. ' : '在这里新建分类. '}
             完成后点击保存按钮.
           </DialogDescription>
         </DialogHeader>
         <div className='h-[26.25rem] w-[calc(100%+0.75rem)] overflow-y-auto py-1 pe-3'>
           <Form {...form}>
             <form
-              id='user-form'
+              id='category-form'
               onSubmit={form.handleSubmit(onSubmit)}
               className='space-y-4 px-0.5'
             >
               <FormField
                 control={form.control}
-                name='userName'
+                name='name'
                 render={({ field }) => (
                   <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
-                    <FormLabel className='col-span-2 text-end'>
-                      用户名
-                    </FormLabel>
+                    <FormLabel className='col-span-2 text-end'>名称</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder='john_doe'
+                        placeholder='单品套餐'
                         className='col-span-4'
                         {...field}
                       />
@@ -159,19 +154,26 @@ export function UsersActionDialog({
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
-                name='email'
+                name='type'
                 render={({ field }) => (
                   <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
-                    <FormLabel className='col-span-2 text-end'>邮箱</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder='john.doe@gmail.com'
-                        className='col-span-4'
-                        {...field}
-                      />
-                    </FormControl>
+                    <FormLabel className='col-span-2 text-end'>角色</FormLabel>
+                    <SelectDropdown
+                      defaultValue={field.value}
+                      onValueChange={field.onChange}
+                      placeholder='选择类别'
+                      className='col-span-4'
+                      isControlled={true}
+                      items={
+                        categoryTypes?.map((type) => ({
+                          label: type.label,
+                          value: type.value,
+                        })) || []
+                      }
+                    />
                     <FormMessage className='col-span-4 col-start-3' />
                   </FormItem>
                 )}
@@ -196,23 +198,13 @@ export function UsersActionDialog({
 
               <FormField
                 control={form.control}
-                name='roleId'
+                name='description'
                 render={({ field }) => (
                   <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
-                    <FormLabel className='col-span-2 text-end'>角色</FormLabel>
-                    <SelectDropdown
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                      placeholder='选择角色'
-                      className='col-span-4'
-                      isControlled={true}
-                      items={
-                        roles?.map((role) => ({
-                          label: role.name,
-                          value: role.id,
-                        })) || []
-                      }
-                    />
+                    <FormLabel className='col-span-2 text-end'>备注</FormLabel>
+                    <FormControl>
+                      <Textarea className='col-span-4' {...field} />
+                    </FormControl>
                     <FormMessage className='col-span-4 col-start-3' />
                   </FormItem>
                 )}
@@ -221,7 +213,7 @@ export function UsersActionDialog({
           </Form>
         </div>
         <DialogFooter>
-          <Button type='submit' form='user-form'>
+          <Button type='submit' form='category-form'>
             保存
           </Button>
         </DialogFooter>
@@ -229,3 +221,5 @@ export function UsersActionDialog({
     </Dialog>
   )
 }
+
+export default CategoriesActionDialog
