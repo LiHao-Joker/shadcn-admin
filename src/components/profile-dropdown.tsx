@@ -39,7 +39,8 @@ export function ProfileDropdown() {
       setUser({
         ...data,
         avatar: data?.avatar || DefaultAvatar,
-        role: data?.role,
+        roles: data?.roles,
+        name: '',
       })
     }
   }, [data, isSuccess, setUser])

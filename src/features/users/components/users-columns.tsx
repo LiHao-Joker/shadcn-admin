@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { DataTableColumnHeader } from '@/components/data-table'
 import { LongText } from '@/components/long-text'
-import { callTypes, roles } from '../data/data'
+import { callTypes } from '../data/data'
 import { DataTableRowActions } from './data-table-row-actions'
 
 export const usersColumns: ColumnDef<UserDto>[] = [
@@ -100,7 +100,7 @@ export const usersColumns: ColumnDef<UserDto>[] = [
     enableSorting: false,
   },
   {
-    accessorKey: 'role',
+    accessorKey: 'roles',
     header: ({ column }) => (
       <DataTableColumnHeader
         column={column}
@@ -108,19 +108,15 @@ export const usersColumns: ColumnDef<UserDto>[] = [
       />
     ),
     cell: ({ row }) => {
-      const { role } = row.original
-      const userType = roles.find(({ value }) => value === role)
-
-      if (!userType) {
-        return null
-      }
+      const roles = row.getValue('roles') as string[]
 
       return (
-        <div className='flex items-center gap-x-2'>
-          {userType.icon && (
-            <userType.icon size={16} className='text-muted-foreground' />
-          )}
-          <span className='text-sm capitalize'>{row.getValue('role')}</span>
+        <div className='flex space-x-2'>
+          {roles.map((r) => (
+            <Badge variant='outline' className={cn('capitalize')}>
+              {r}
+            </Badge>
+          ))}
         </div>
       )
     },

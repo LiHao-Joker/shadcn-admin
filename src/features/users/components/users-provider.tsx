@@ -9,6 +9,7 @@ type UsersDialogType =
   | 'delete'
   | 'status'
   | 'resetpassword'
+  | 'roleAssign'
 
 type UsersContextType = {
   open: UsersDialogType | null

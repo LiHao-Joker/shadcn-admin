@@ -18,13 +18,16 @@ export function CategoriesStatusDialog({
   const { mutateAsync: changeStatus } = useMutation({
     mutationFn: async () => {
       await patchCategoryEndpoint({
-        body: [
-          {
-            op: 'replace',
-            value: !currentRow.isActive,
-            path: '/isActive',
-          },
-        ],
+        body: {
+          patches: [
+            {
+              operationType: 'replace',
+              op: 'replace',
+              value: !currentRow.isActive,
+              path: '/isActive',
+            },
+          ],
+        },
         path: {
           id: currentRow.id,
         },

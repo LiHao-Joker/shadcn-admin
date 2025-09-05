@@ -1,5 +1,5 @@
 ﻿import { useMutation } from '@tanstack/react-query'
-import { updateUserStatusEndpoint, type UserDto } from '@/api'
+import { patchUserEndpoint, type UserDto } from '@/api'
 import { AlertTriangle } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.tsx'
 import { ConfirmDialog } from '@/components/confirm-dialog.tsx'
@@ -17,9 +17,16 @@ export function UsersStatusDialog({
 }: UserStatusDialogProps) {
   const { mutateAsync: changeStatus } = useMutation({
     mutationFn: async () => {
-      await updateUserStatusEndpoint({
+      await patchUserEndpoint({
         body: {
-          isActive: !currentRow.isActive,
+          patches: [
+            {
+              operationType: 'replace',
+              op: 'replace',
+              path: '/isActive',
+              value: !currentRow.isActive,
+            },
+          ],
         },
         path: {
           id: currentRow.id,

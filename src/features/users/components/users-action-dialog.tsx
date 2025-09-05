@@ -33,7 +33,6 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch.tsx'
-import { SelectDropdown } from '@/components/select-dropdown.tsx'
 import { useUsers } from '@/features/users/components/users-provider.tsx'
 
 const formSchema = z.object({
@@ -42,7 +41,6 @@ const formSchema = z.object({
     error: (iss) =>
       iss.input === '' ? '邮箱不能为空' : '请输入有效的邮箱地址',
   }),
-  roleId: z.string().min(1, '请选择角色'),
   isActive: z.boolean(),
 })
 type UserForm = z.infer<typeof formSchema>
@@ -82,7 +80,6 @@ export function UsersActionDialog({
     form.reset({
       userName: currentUser?.userName || '',
       email: currentUser?.email || '',
-      roleId: roles?.find((r) => r.name === currentUser?.role)?.id || '',
       isActive: currentUser?.isActive || false,
     })
   }, [currentUser, form, roles])
@@ -189,30 +186,6 @@ export function UsersActionDialog({
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <FormMessage className='col-span-4 col-start-3' />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name='roleId'
-                render={({ field }) => (
-                  <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
-                    <FormLabel className='col-span-2 text-end'>角色</FormLabel>
-                    <SelectDropdown
-                      defaultValue={field.value}
-                      onValueChange={field.onChange}
-                      placeholder='选择角色'
-                      className='col-span-4'
-                      isControlled={true}
-                      items={
-                        roles?.map((role) => ({
-                          label: role.name,
-                          value: role.id,
-                        })) || []
-                      }
-                    />
                     <FormMessage className='col-span-4 col-start-3' />
                   </FormItem>
                 )}

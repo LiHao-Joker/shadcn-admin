@@ -39,7 +39,7 @@ export function UsersTable({ search, navigate }: DataTableProps) {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [sorting, setSorting] = useState<SortingState>([])
 
-  const { open, setRoles, roles: roless } = useUsers()
+  const { open, setRoles } = useUsers()
 
   const {
     columnFilters,
@@ -57,7 +57,6 @@ export function UsersTable({ search, navigate }: DataTableProps) {
       { columnId: 'userName', searchKey: 'userName', type: 'string' },
       // { columnId: 'email', searchKey: 'Email', type: 'string' },
       // { columnId: 'status', searchKey: 'status', type: 'array' },
-      { columnId: 'role', searchKey: 'role', type: 'array' },
     ],
   })
 
@@ -80,7 +79,6 @@ export function UsersTable({ search, navigate }: DataTableProps) {
           sort: sorting
             .map((s) => `${s.id} ${s.desc ? 'desc' : 'asc'}`)
             ?.join(', '),
-          roles: columnFilters.find((c) => c.id === 'role')?.value as string[],
         },
       })
       return res.data
@@ -152,16 +150,6 @@ export function UsersTable({ search, navigate }: DataTableProps) {
         table={table}
         searchKey={'userName'}
         searchPlaceholder='搜索用户名...'
-        filters={[
-          {
-            columnId: 'role',
-            title: '角色',
-            options: roless!.map((role) => ({
-              value: role.id,
-              label: role.name,
-            })),
-          },
-        ]}
       />
       <div className='overflow-hidden rounded-md border'>
         <Table>

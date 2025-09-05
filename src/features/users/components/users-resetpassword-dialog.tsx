@@ -137,6 +137,9 @@ function UsersResetpasswordDialog({
           </Alert>
         </div>
       }
+      confirmText='确定'
+      cancelBtnText='取消'
+      destructive
     ></ConfirmDialog>
   )
 }

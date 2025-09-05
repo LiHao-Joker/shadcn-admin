@@ -1,6 +1,7 @@
 import { UsersDeleteDialog } from '@/features/users/components/users-delete-dialog.tsx'
 import { useUsers } from '@/features/users/components/users-provider.tsx'
 import UsersResetpasswordDialog from '@/features/users/components/users-resetpassword-dialog.tsx'
+import { UserRoleAssignDialog } from '@/features/users/components/users-role-assign-dialog.tsx'
 import { UsersStatusDialog } from '@/features/users/components/users-status-dialog.tsx'
 import { UsersActionDialog } from './users-action-dialog'
 
@@ -56,6 +57,17 @@ export function UsersDialogs() {
             open={open === 'resetpassword'}
             onOpenChange={() => {
               setOpen('resetpassword')
+              setTimeout(() => {
+                setCurrentRow(null)
+              }, 500)
+            }}
+            currentRow={currentRow}
+          />
+          <UserRoleAssignDialog
+            key={`user-role-assign-${currentRow.id}`}
+            open={open === 'roleAssign'}
+            onOpenChange={() => {
+              setOpen('roleAssign')
               setTimeout(() => {
                 setCurrentRow(null)
               }, 500)

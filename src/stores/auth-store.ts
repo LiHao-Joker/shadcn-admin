@@ -9,7 +9,7 @@ interface AuthUser {
   name: string
   avatar: string
   email: string
-  role: string
+  roles: string[]
 }
 
 interface AuthToken {

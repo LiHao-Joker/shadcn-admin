@@ -1,7 +1,14 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons'
 import { type Row } from '@tanstack/react-table'
 import { type UserDto } from '@/api'
-import { Lock, LockOpen, Trash2, UserPen } from 'lucide-react'
+import {
+  Key,
+  Lock,
+  LockOpen,
+  Trash2,
+  UserPen,
+  LucideContact2,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -48,6 +55,18 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           <DropdownMenuItem
             onClick={() => {
               setCurrentRow(row.original)
+              setOpen('roleAssign')
+            }}
+          >
+            分配角色
+            <DropdownMenuShortcut>
+              <LucideContact2 size={16} />
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={() => {
+              setCurrentRow(row.original)
               setOpen('status')
             }}
           >
@@ -68,7 +87,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           >
             重置密码
             <DropdownMenuShortcut>
-              <Trash2 size={16} />
+              <Key size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
