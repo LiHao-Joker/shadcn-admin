@@ -1,15 +1,7 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons'
 import { type Row } from '@tanstack/react-table'
-import { type UserDto } from '@/api'
-import {
-  Key,
-  Lock,
-  LockOpen,
-  Trash2,
-  UserPen,
-  Printer,
-  LucideContact2,
-} from 'lucide-react'
+import { type DishDto } from '@/api'
+import { Lock, LockOpen, Trash2, UserPen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -19,14 +11,14 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useUsers } from '@/features/users/components/users-provider.tsx'
+import { useDishes } from '@/features/dishes/components/dishes-provider.tsx'
 
 type DataTableRowActionsProps = {
-  row: Row<UserDto>
+  row: Row<DishDto>
 }
 
-export function DataTableRowActions({ row }: DataTableRowActionsProps) {
-  const { setOpen, setCurrentRow } = useUsers()
+export function DishesRowActions({ row }: DataTableRowActionsProps) {
+  const { setOpen, setCurrentRow } = useDishes()
   return (
     <>
       <DropdownMenu modal={false}>
@@ -56,18 +48,6 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           <DropdownMenuItem
             onClick={() => {
               setCurrentRow(row.original)
-              setOpen('roleAssign')
-            }}
-          >
-            分配角色
-            <DropdownMenuShortcut>
-              <LucideContact2 size={16} />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            onClick={() => {
-              setCurrentRow(row.original)
               setOpen('status')
             }}
           >
@@ -80,30 +60,6 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
               )}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => {
-              setCurrentRow(row.original)
-              setOpen('resetpassword')
-            }}
-          >
-            重置密码
-            <DropdownMenuShortcut>
-              <Key size={16} />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => {
-              setCurrentRow(row.original)
-              setOpen('print')
-            }}
-          >
-            打印
-            <DropdownMenuShortcut>
-              <Printer size={16} />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => {
               setCurrentRow(row.original)

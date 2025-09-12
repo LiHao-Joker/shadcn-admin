@@ -1,4 +1,5 @@
 import { UsersDeleteDialog } from '@/features/users/components/users-delete-dialog.tsx'
+import { UserPrintDialog } from '@/features/users/components/users-print-dialog.tsx'
 import { useUsers } from '@/features/users/components/users-provider.tsx'
 import UsersResetpasswordDialog from '@/features/users/components/users-resetpassword-dialog.tsx'
 import { UserRoleAssignDialog } from '@/features/users/components/users-role-assign-dialog.tsx'
@@ -68,6 +69,17 @@ export function UsersDialogs() {
             open={open === 'roleAssign'}
             onOpenChange={() => {
               setOpen('roleAssign')
+              setTimeout(() => {
+                setCurrentRow(null)
+              }, 500)
+            }}
+            currentRow={currentRow}
+          />
+          <UserPrintDialog
+            key={`user-print-${currentRow.id}`}
+            open={open === 'print'}
+            onOpenChange={() => {
+              setOpen('print')
               setTimeout(() => {
                 setCurrentRow(null)
               }, 500)

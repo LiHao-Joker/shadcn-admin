@@ -8,6 +8,7 @@ type UsersDialogType =
   | 'edit'
   | 'delete'
   | 'status'
+  | 'print'
   | 'resetpassword'
   | 'roleAssign'
 

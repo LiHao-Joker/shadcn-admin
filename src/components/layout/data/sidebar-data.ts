@@ -22,6 +22,7 @@ import {
   AudioWaveform,
   Command,
   GalleryVerticalEnd,
+  Utensils,
 } from 'lucide-react'
 import { ClerkLogo } from '@/assets/clerk-logo'
 import { type SidebarData } from '../types'
@@ -83,6 +84,11 @@ export const sidebarData: SidebarData = {
           title: '分类管理',
           url: '/categories',
           icon: Tags,
+        },
+        {
+          title: '菜品管理',
+          url: '/dishes',
+          icon: Utensils,
         },
         {
           title: 'Secured by Clerk',
